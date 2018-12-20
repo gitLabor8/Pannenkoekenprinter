@@ -87,6 +87,9 @@ celerybeat-schedule
 .venv
 venv/
 ENV/
+pyenv/
+share/
+local/
 
 # Spyder project settings
 .spyderproject
@@ -103,3 +106,6 @@ ENV/
 
 # IDE configs
 .idea/
+
+# Vim
+*.swp
