@@ -9,3 +9,7 @@ The earlier printer had as main problem that it printed too slow. We tried to fi
 * Increase the flow by changing the hose
 * Substituting the stepper motors by DC-motors with encoders
 Since the first isn't that technical, we will now go into detail on how we did the latter.
+
+## Memorisations
+Scan for motor hat (I2C connections)
+> sudo i2cdetect -y 1
