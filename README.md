@@ -13,3 +13,9 @@ Since the first isn't that technical, we will now go into detail on how we did t
 ## Memorisations
 Scan for motor hat (I2C connections)
 > sudo i2cdetect -y 1
+
+## Tussenstand
+Ik kan lijntjes tekenen
+Heb geen flauw idee hoe ik op Ties' code moet aanhaken
+Scipi wil niet builden via pip3
+Succes!
