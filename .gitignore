@@ -109,3 +109,8 @@ local/
 
 # Vim
 *.swp
+
+# Nano?
+*.save
+*.1
+*.2
