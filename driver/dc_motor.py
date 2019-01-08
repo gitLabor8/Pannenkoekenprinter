@@ -39,6 +39,7 @@ def turnOffMotors():
 # Should the program on the Pi crash, the motors will be stopped
 #  See motor hat documentation page 4
 atexit.register(turnOffMotors)
+atexit.register(pumpOff())
 
 # There are two member functions:
 # .setSpeed(X) with 0 < X < 255
