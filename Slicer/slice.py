@@ -98,7 +98,9 @@ from skimage import measure
 #print(contour)
 #plt.plot(contour[:, 1], 256-contour[:, 0], linewidth=5)
 
-import driver as drv
+print "before import"
+import driver_stepper_motor as drv
+print "vector:" + contour
 drv.print_vector(contour)
 
 
