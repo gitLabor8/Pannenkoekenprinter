@@ -1,6 +1,5 @@
 ###Slice.py
 # Use to slice an image into vectors
-# swag
 
 #############CONSTANTS
 IMAGE_SIZE=(256,256)
@@ -97,10 +96,6 @@ from skimage import measure
 
 #print(contour)
 #plt.plot(contour[:, 1], 256-contour[:, 0], linewidth=5)
-
-import driver as drv
-drv.print_vector(contour)
-
 
 
 # for n, contour in enumerate(contours):

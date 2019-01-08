@@ -73,7 +73,7 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
         import matplotlib.pyplot as plt
         plt.axis('equal')
     else:
-        import Slicer.driver as drv
+        import  as drv
 
     if SINGLE:
         if BOT:
