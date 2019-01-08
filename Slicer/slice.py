@@ -1,6 +1,5 @@
 ###Slice.py
 # Use to slice an image into vectors
-# swag
 
 #############CONSTANTS
 IMAGE_SIZE=(256,256)
@@ -98,12 +97,15 @@ from skimage import measure
 #print(contour)
 #plt.plot(contour[:, 1], 256-contour[:, 0], linewidth=5)
 
+<<<<<<< HEAD:Slicer/slice.py
 print "before import"
 import driver_stepper_motor as drv
 print "vector:" + contour
 drv.print_vector(contour)
 
 
+=======
+>>>>>>> 68dc3959b27fd40a1d234c8496e472bca31ef175:slicer/slice.py
 
 # for n, contour in enumerate(contours):
 #     plt.plot(contour[:, 1], 256-contour[:, 0], linewidth=5)

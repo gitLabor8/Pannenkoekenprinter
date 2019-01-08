@@ -18,6 +18,8 @@ from skimage import measure
 import os
 RUNNING_LOCALLY = os.path.isfile('Slicer/no_print')
 
+from collections import deque
+
 def RapidContour(segment, BATTER_SIZE, erode=True):
     vector_list = [0]
     vector_output = []
@@ -73,8 +75,9 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
         import matplotlib.pyplot as plt
         plt.axis('equal')
     else:
-        import Slicer.driver_stepper_motor as drv
 
+    vectorQueue = deque([])
+    print("Started slicing")
     if SINGLE:
         if BOT:
             for segment in seg_bot[:1]:
@@ -83,7 +86,7 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256-vector[:, 0], linewidth=5, color='saddlebrown')
                     else:
-                        drv.print_vector(vector/(SQRSIZE/320.0))
+                        vectorQueue.append(vector/(SQRSIZE/320.0))
         if MID:
             for segment in seg_mid[:1]:
                 print("slice_segment_mid")
@@ -91,7 +94,7 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256-vector[:, 0], linewidth=5, color='goldenrod')
                     else:
-                        drv.print_vector(vector/(SQRSIZE/320.0))
+                        vectorQueue.append(vector/(SQRSIZE/320.0))
         if TOP:
             for segment in seg_top[:1]:
                 print("slice_segment_top")
@@ -99,7 +102,7 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256-vector[:, 0], linewidth=5, color='moccasin')
                     else:
-                        drv.print_vector(vector/(SQRSIZE/320.0))
+                        vectorQueue.append(vector/(SQRSIZE/320.0))
         print("done")
     else:
         if BOT:
@@ -109,7 +112,7 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256-vector[:, 0], linewidth=5, color='saddlebrown')
                     else:
-                        drv.print_vector(vector/(SQRSIZE/320.0))
+                        vectorQueue.append(vector/(SQRSIZE/320.0))
         if MID:
             for segment in seg_mid[:1]:
                 print("slice_segment_mid")
@@ -117,7 +120,7 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256-vector[:, 0], linewidth=5, color='goldenrod')
                     else:
-                        drv.print_vector(vector/(SQRSIZE/320.0))
+                        vectorQueue.append(vector/(SQRSIZE/320.0))
         if TOP:
             for segment in seg_top[:1]:
                 print("slice_segment_top")
@@ -125,11 +128,12 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256-vector[:, 0], linewidth=5, color='moccasin')
                     else:
-                        drv.print_vector(vector/(SQRSIZE/320.0))
-        print("Done!")
+                        vectorQueue(vector/(SQRSIZE/320.0))
+        print("Done vectorising")
     if RETURN_IMG:
         plt.axis("off")
         plt.savefig('fig.png', bbox_inches='tight', pad_inches = 0)
     else:
         if RUNNING_LOCALLY:
             plt.show()
+	return vectorQueue

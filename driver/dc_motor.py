@@ -122,6 +122,14 @@ def niceFigure():
     # uit
     drawLine(Coordinate(x=0,y=0))
 
+def printVector(vector):
+    print(vector)
+
+def print(vectorQueue):
+    print("Starting placeholder printing")
+    for vector in vectorQueue:
+	printVector(vector)
+
 #pumpOn()
 #print("pump on")
 #sleep(0.2)

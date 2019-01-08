@@ -1,13 +1,16 @@
 import Slicer.slice_run as slicer
 from PIL import Image
+import dc_motor as driver
 
 imgname = "images/eiffeltower.png"
 picture = Image.open(imgname).convert("L")
 gray = picture.convert('L')
 bw = gray.point(lambda x: 0 if x<128 else 255, '1')
-slicer.Slice_Image(bw, SQRSIZE=400, BLURRED=True, EQUALIZED=False,\
+vectorQueue = slicer.Slice_Image(bw, SQRSIZE=400, BLURRED=True, EQUALIZED=False,\
  CWHITE=False, INVERTED=False, RETURN_IMG=False, SINGLE=False,\
   BOT=True, MID=True, TOP=True)
+
+driver.print(vectorQueue)
 #
 # import matplotlib.pyplot as plt
 # # #
