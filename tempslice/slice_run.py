@@ -7,7 +7,7 @@ import sys
 
 # file_dir = os.path.dirname(__file__)
 # sys.path.append(file_dir)
-import Slicer.slice_lib as slib
+import slicer.slice_lib as slib
 import numpy as np
 from PIL import Image
 import scipy.signal

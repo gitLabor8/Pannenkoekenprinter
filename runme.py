@@ -1,6 +1,6 @@
-import Slicer.slice_run as slicer
+import slicer.slice_run as slicer
 from PIL import Image
-import dc_motor as driver
+import driver.dc_motor as driver
 
 imgname = "images/eiffeltower.png"
 picture = Image.open(imgname).convert("L")
