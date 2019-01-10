@@ -10,16 +10,13 @@ import sys
 import slicer.slice_lib as slib
 import numpy as np
 from PIL import Image
-import scipy.signal
 from skimage import morphology as mp
-from skimage import exposure
 from skimage import measure
+from collections import deque
 
 import os
 
 RUNNING_LOCALLY = os.path.isfile('Slicer/no_print')
-
-from collections import deque
 
 
 def RapidContour(segment, BATTER_SIZE, erode=True):
@@ -28,7 +25,6 @@ def RapidContour(segment, BATTER_SIZE, erode=True):
     if erode:
         segment = mp.binary_dilation(segment, mp.disk(BATTER_SIZE // 3 * 2))
     while vector_list:
-        vector_list = []
         vector_list = measure.find_contours(segment, .1)
         vector_output.extend(vector_list)
         segment = mp.binary_dilation(segment, mp.disk(BATTER_SIZE))
@@ -79,13 +75,10 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
         matplotlib.use("QT5Agg")
         import matplotlib.pyplot as plt
         plt.axis('equal')
-    else:
-        vectorQueue = deque([])
-    print("Started slicing")
+    vectorQueue = deque([])
     if SINGLE:
         if BOT:
             for segment in seg_bot[:1]:
-                print("slice_segment_bot")
                 for vector in SingleContour(segment, BATTER_SIZE):
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256 - vector[:, 0], linewidth=5, color='saddlebrown')
@@ -93,7 +86,6 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                         vectorQueue.append(vector / (SQRSIZE / 320.0))
         if MID:
             for segment in seg_mid[:1]:
-                print("slice_segment_mid")
                 for vector in SingleContour(segment, BATTER_SIZE):  # measure.find_contours(segment,.1):
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256 - vector[:, 0], linewidth=5, color='goldenrod')
@@ -101,17 +93,14 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                         vectorQueue.append(vector / (SQRSIZE / 320.0))
         if TOP:
             for segment in seg_top[:1]:
-                print("slice_segment_top")
                 for vector in SingleContour(segment, BATTER_SIZE):  # measure.find_contours(segment,.1):
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256 - vector[:, 0], linewidth=5, color='moccasin')
                     else:
                         vectorQueue.append(vector / (SQRSIZE / 320.0))
-        print("done")
     else:
         if BOT:
             for segment in seg_bot[:1]:
-                print("slice_segment_bot")
                 for vector in RapidContour(segment, BATTER_SIZE):
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256 - vector[:, 0], linewidth=5, color='saddlebrown')
@@ -119,7 +108,6 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                         vectorQueue.append(vector / (SQRSIZE / 320.0))
         if MID:
             for segment in seg_mid[:1]:
-                print("slice_segment_mid")
                 for vector in RapidContour(segment, BATTER_SIZE):  # measure.find_contours(segment,.1):
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256 - vector[:, 0], linewidth=5, color='goldenrod')
@@ -127,12 +115,11 @@ def Slice_Image(picture, SQRSIZE=500, BLURRED=True, EQUALIZED=True, CWHITE=False
                         vectorQueue.append(vector / (SQRSIZE / 320.0))
         if TOP:
             for segment in seg_top[:1]:
-                print("slice_segment_top")
                 for vector in RapidContour(segment, BATTER_SIZE):  # measure.find_contours(segment,.1):
                     if RUNNING_LOCALLY:
                         plt.plot(vector[:, 1], 256 - vector[:, 0], linewidth=5, color='moccasin')
                     else:
-                        vectorQueue(vector / (SQRSIZE / 320.0))
+                        vectorQueue.append(vector / (SQRSIZE / 320.0))
         print("Done vectorising")
     if RETURN_IMG:
         plt.axis("off")
