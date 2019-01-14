@@ -5,23 +5,29 @@ import math
 import threading
 from time import sleep
 
-#import RPi.GPIO as GPIO
-#from adafruit_motorkit import MotorKit
-#kit = MotorKit()
-#
-#kit.motor1.throttle = .3
-#sleep(1)
-#kit.motor1.throttle = 0
+import RPi.GPIO as GPIO
 from Adafruit_MotorHAT import Adafruit_MotorHAT
 
 # Set variables
 #mh = Adafruit_MotorHAT(addr=0x6F)
-mh = Adafruit_MotorHAT(addr=0x70)
+#mh = Adafruit_MotorHAT(addr=0x70)
 pos_x = 0
 pos_y = 0
-#GPIO.setmode(GPIO.BOARD)
-#GPIO.setup([7], GPIO.OUT)
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup([15], GPIO.OUT, initial=GPIO.LOW)
+sleep(1)
+GPIO.output(15, GPIO.HIGH)
+sleep(1)
+GPIO.output(15, GPIO.LOW)
+sleep(1)
+GPIO.output(15, GPIO.HIGH)
+sleep(1)
 
+# Should the program on the Pi crash, the motors will be stopped
+#  See motor hat documentation page 4
+atexit.register(GPIO.cleanup)
+
+'''
 run_motorspeed = 30
 
 # Motor that goes over the x-axis
@@ -75,3 +81,4 @@ while (True):
         currentMotor = yMotor
     else:
         currentMotor = xMotor
+'''
