@@ -3,6 +3,7 @@
 import atexit
 from math import sqrt, floor
 from time import sleep
+from collections import deque
 from coordinates import Coordinate
 
 Coordinate.default_order = 'xy'
@@ -35,7 +36,9 @@ yMotor = mh.getMotor(2)
 
 
 def turnOffMotors():
+    xMotor.setSpeed(0)
     xMotor.run(Adafruit_MotorHAT.RELEASE)
+    yMotor.setSpeed(0)
     yMotor.run(Adafruit_MotorHAT.RELEASE)
 
 
@@ -157,7 +160,7 @@ def resetPos():
     # print("yCounter = " + str(yCounter) + " in " + str(sleepTimeY))
 
     # Offset to accommodate for round edges of frying pan
-    moveTo(Coordinate(0, 400))
+    # moveTo(Coordinate(0, 100))
     turnOffMotors()
     global currentPos
     currentPos = Coordinate(0, 0)
@@ -174,14 +177,13 @@ def setDirection(motor, dist):
 # Gradually speeding up the motor
 def revUpMotor(motor, speed):
     # Let's try out not revving, prolly faster
-    motor.setSpeed(speed)
+    # motor.setSpeed(speed)
     # Ramping method (better for motor condition?)
-    # for i in range(speed):
-    #     motor.setSpeed(i)
+    for i in range(speed):
+        motor.setSpeed(i)
 
 
-# Takes end point in measuring points
-# Moves the head without printing
+# Goes to the given absolute endpoint
 def moveTo(measurePointCoordinate):
     xDist = measurePointCoordinate.x - currentPos.x
     yDist = measurePointCoordinate.y - currentPos.y
@@ -192,52 +194,73 @@ def moveTo(measurePointCoordinate):
     # Now we set the length
     xDist = abs(xDist)
     yDist = abs(yDist)
+    if xDist == 0 and yDist == 0:
+        return
     # The Y-motor is about 4% faster than the X-motor, see statistics in spreadsheet
     speedDif = maxTimeXaxis / maxTimeYaxis
 
     if (xDist == 0):
-        revUpMotor(yMotor, maxSpeed)
+        xSpeed = 0
+        ySpeed = maxSpeed
     else:
         distDif = yDist / xDist
         if (xDist > yDist):
-            revUpMotor(xMotor, floor(maxSpeed))
-            revUpMotor(yMotor, floor(maxSpeed * distDif / speedDif))
+            xSpeed = floor(maxSpeed)
+            ySpeed = floor(maxSpeed * distDif / speedDif)
         else:
-            revUpMotor(xMotor, floor(maxSpeed / distDif))
-            revUpMotor(yMotor, floor(maxSpeed / speedDif))
+            xSpeed = floor(maxSpeed / distDif)
+            ySpeed = floor(maxSpeed / speedDif)
+    revUpMotor(xMotor, xSpeed)
+    revUpMotor(yMotor, ySpeed)
 
-    # Roll until we are almost there
+    # Roll until we aren't getting any closer
     oldXCounter, oldYCounter = xCounter, yCounter
-    lengthToGoX = abs(xCounter - oldXCounter - xDist)
-    lengthToGoY = abs(yCounter - oldYCounter - yDist)
-    while not lengthToGoX + lengthToGoY < 4:
-        sleep(0.002)
-        # Debug string to check the difference between x and y
-        if lengthToGoX < 5 or lengthToGoY < 5:
-            print("lengthToGoX: " + str(lengthToGoX))
-            print("lengthToGoY: " + str(lengthToGoY))
-            print(str(yCounter) + " " +str(oldYCounter) + " " +str(yDist))
+    # Check if we got closer in the last 3 iterations through a circular buffer
+    distanceLeftQue = deque(maxlen=2)
+    distanceLeftQue.append(xDist + yDist)
+    iteration = 0
+    baseAmountOfIterations = 0
+    # Make it run for at least 3 steps to accommodate for ramping
+    while distanceLeftQue[0] >= distanceLeftQue[-1] or \
+            iteration <= max(baseAmountOfIterations, distanceLeftQue.maxlen):
+        lengthToGoX = abs(xCounter - oldXCounter - xDist)
+        lengthToGoY = abs(yCounter - oldYCounter - yDist)
+        sleep(0.004)
+        # TODO Possible improvement: other distance metric
+        distanceLeft = sqrt(pow(lengthToGoX, 2) + pow(lengthToGoY, 2))
+        distanceLeftQue.append(distanceLeft)
+        iteration += 1
+    turnOffMotors()
+    global currentPos
+    # TODO Test: real value <-> expected value
+    currentPos = measurePointCoordinate
+    # # How much deviation is caused by the 3-step latency?
+    print("circ buff: " + str(distanceLeftQue))
+    # print("Current coor: " + str(currentPos))
+    if distanceLeftQue[0] >= 50:
+        print(" Wew, something went wrong there. Let's find out what!")
+        print("  xSpeed: " + str(xSpeed) + " ySpeed: " + str(ySpeed))
 
 
 def printQueue(vectorQueue):
-    print("Starting placeholder printing")
-    for vector in vectorQueue:
-        moveTo(numpyToEncoder(vector[0]))
-        pumpOn()
-        for coordinate in vector:
-            moveTo(numpyToEncoder(coordinate))
-        pumpOff()
+    resetPos()
+    # for vector in vectorQueue:
+    vector = dummyVector
+    # Move to starting position
+    moveTo(numpyToEncoder(vector.pop(0)))
+    # Start printing
+    pumpOn()
+    for coordinate in vector:
+        moveTo(numpyToEncoder(coordinate))
+    pumpOff()
 
 
 # Precondition: Starts in bottom left corner
 def drawRectangle(breadth, height):
-    moveTo(Coordinate(0, height))
-    sleep(10)
-    moveTo(Coordinate(breadth, height))
-    sleep(10)
-    moveTo(Coordinate(breadth, 0))
-    sleep(2)
-    moveTo(Coordinate(0, 0))
+    moveTo(Coordinate(currentPos.x, height + currentPos.y))
+    moveTo(Coordinate(breadth + currentPos.x, currentPos.y))
+    moveTo(Coordinate(currentPos.x, - height + currentPos.y))
+    moveTo(Coordinate(- breadth + currentPos.x, currentPos.y))
 
 
 '''
@@ -247,14 +270,13 @@ def drawRectangle(breadth, height):
 In this project there are three axial systems:
   - the numpy coordinate system used by the slicer (320 x 320)
   - the encoder measuring system (1840 x 1760)
-  - the time for the motors at full speed to reach a point in seconds(5 x 6)
 We below the converters (numpy, encoder) and (encoder, time)
 The first is simple, the latter accommodates for ramping and inequality between motors
 '''
 
 
 def numpyToEncoder(numpyCoordinate):
-    print("Next coor: " + str(numpyCoordinate))
+    print("Numpy Coor: " + str(numpyCoordinate))
     x = numpyCoordinate[0]
     y = numpyCoordinate[1]
     # Slicer uses a grid system of 320 x 320
@@ -275,14 +297,19 @@ def test(vectorQueue):
     print("start test")
     # printQueue(vectorQueue)
 
+    # resetPos()
+    # moveTo(Coordinate(0, 0))
+    # pumpOn()
+    # drawRectangle(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis)
+    # moveTo(Coordinate(200, 200))
+    # drawRectangle(maxMeasuringPointsXaxis / 2, maxMeasuringPointsYaxis)
+    # pumpOff()
 
-    resetPos()
-#    drawRectangle(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis/2)
+    printQueue([])
 
-    # printQueue(vectorQueue)
 
-    #    print(numpyToEncoder([160.0, 160.0]))
-    print("end")
+#    print(numpyToEncoder([160.0, 160.0]))
+print("end")
 
 
 # Flushes the tube for 60 seconds (for cleaning)
@@ -290,3 +317,61 @@ def flushTube():
     pumpOn()
     sleep(60)
     pumpOff()
+
+
+dummyVector = [[168.8, 275.28],
+               [168.0, 275.28],
+               [167.2, 275.28],
+               [166.4, 275.28],
+               [165.6, 275.28],
+               [164.8, 275.28],
+               [164.0, 275.28],
+               [163.2, 275.28],
+               [162.4, 275.28],
+               [161.6, 275.28],
+               [160.8, 275.28],
+               [160.0, 275.28],
+               [159.2, 275.28],
+               [158.4, 275.28],
+               [157.6, 275.28],
+               [156.8, 275.28],
+               [156.0, 275.28],
+               [155.2, 275.28],
+               [154.4, 275.28],
+               [153.6, 275.28],
+               [152.8, 275.28],
+               [152.0, 275.28],
+               [151.2, 275.28],
+               [150.4, 275.28],
+               [149.6, 275.28],
+               [149.52, 275.2],
+               [149.52, 274.4],
+               [149.52, 273.6],
+               [149.52, 272.8],
+               [149.52, 272.0],
+               [149.52, 271.2],
+               [149.52, 270.4],
+               [149.52, 269.6],
+               [149.52, 268.8],
+               [149.52, 268.0],
+               [149.52, 267.2],
+               [149.52, 266.4],
+               [149.52, 265.6],
+               [149.52, 264.8],
+               [149.52, 264.0],
+               [149.52, 263.2],
+               [149.52, 262.4],
+               [149.52, 261.6],
+               [149.52, 260.8],
+               [149.52, 260.],
+               [149.52, 259.2],
+               [149.52, 258.4],
+               [149.52, 257.6],
+               [149.52, 256.8],
+               [149.52, 256.],
+               [149.52, 255.2],
+               [149.52, 254.4],
+               [149.52, 253.6],
+               [149.52, 252.8],
+               [149.52, 252.],
+               ]

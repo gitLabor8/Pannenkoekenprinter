@@ -11,6 +11,15 @@ import driver.dc_motor as driver
 # Why dc motor in for-loop?
 # Pump not centered: ty-rap broke
 # Split into multiple files? 300+ lines of code/comment. Pump <-> motor
+# wanneer stoppen met bewegen:
+#  - Fixed boundary (linear function)
+#  -> Stop when not getting closer anymore
+#    Skipt soms volledige beweging
+#  - Precalculate the estimated time
+#  -> wil je dit in het verslag hebben?
+# Experimenteren met beslag:
+#  - coordinaat updaten naar werkelijke waarde
+#  - coordinaat updaten naar verwachtte waarde
 
 vectorQueue = []
 # Prepend a # on the next line to switch between slicer and driver
@@ -28,7 +37,7 @@ vectorQueue = slicer.Slice_Image(bw, SQRSIZE=400, BLURRED=True, EQUALIZED=False,
 # a coordinate is an 1x2 array of floats 0.0 <= x <= 320
 #print(str(vectorQueue.pop()[0]))
 
-'''
+#'''
 try:
     driver.test(vectorQueue)
 except KeyboardInterrupt:
