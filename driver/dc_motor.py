@@ -5,6 +5,7 @@ from math import sqrt, floor
 from time import sleep
 from collections import deque
 from coordinates import Coordinate
+from numpy import sign
 
 Coordinate.default_order = 'xy'
 
@@ -14,8 +15,8 @@ GPIO.setmode(GPIO.BOARD)
 from Adafruit_MotorHAT import Adafruit_MotorHAT
 
 # Amount of measuring points over the axis
-maxMeasuringPointsXaxis = 1400.0
-maxMeasuringPointsYaxis = 1400.0
+maxMeasuringPointsXaxis = 1500.0
+maxMeasuringPointsYaxis = 1450.0
 # Time it takes to cover all measuring points with a full speed motor. Numbers acquired through
 # statistics. Allows us to compensates for one motor being slower than the other
 maxTimeXaxis = 5.99
@@ -51,23 +52,24 @@ atexit.register(turnOffMotors)
 ###
 
 # Relais to pump
-GPIO.setup([15], GPIO.OUT, initial=GPIO.LOW)
+GPIO.setup([7], GPIO.OUT, initial=GPIO.HIGH)
 
 
+# The relais wants a HIGH to turn the pump and green control light off
 def pumpOff():
-    GPIO.output(15, GPIO.LOW)
+    GPIO.output(7, GPIO.HIGH)
 
 
+# The relais wants a LOW to turn the pump and green control light on
 def pumpOn():
-    GPIO.output(15, GPIO.HIGH)
+    GPIO.output(7, GPIO.LOW)
 
 
 # Should the program on the Pi crash, the motors will be stopped
 #  See motor hat documentation page 4
+# Note: atexit functions are executed in reversed order
+atexit.register(GPIO.cleanup)
 atexit.register(pumpOff)
-# Note: if GPIO.cleanup() is run atexit (as recommended by tutorials)
-#   the GPIO port will be turned into an input port, resulting in the relais/pump being on
-#   This does yield a warning about the channel already being in use
 
 '''
 ###
@@ -160,7 +162,7 @@ def resetPos():
     # print("yCounter = " + str(yCounter) + " in " + str(sleepTimeY))
 
     # Offset to accommodate for round edges of frying pan
-    # moveTo(Coordinate(0, 100))
+    moveTo(Coordinate(0, 100))
     turnOffMotors()
     global currentPos
     currentPos = Coordinate(0, 0)
@@ -192,9 +194,7 @@ def moveTo(measurePointCoordinate):
     print("xdist, ydist = " + str(xDist) + " " + str(yDist))
 
     # Now we set the length
-    xDist = abs(xDist)
-    yDist = abs(yDist)
-    if xDist == 0 and yDist == 0:
+    if abs(xDist) == 0 and abs(yDist) == 0:
         return
     # The Y-motor is about 4% faster than the X-motor, see statistics in spreadsheet
     speedDif = maxTimeXaxis / maxTimeYaxis
@@ -203,8 +203,8 @@ def moveTo(measurePointCoordinate):
         xSpeed = 0
         ySpeed = maxSpeed
     else:
-        distDif = yDist / xDist
-        if (xDist > yDist):
+        distDif = abs(yDist) / abs(xDist)
+        if (abs(xDist) > abs(yDist)):
             xSpeed = floor(maxSpeed)
             ySpeed = floor(maxSpeed * distDif / speedDif)
         else:
@@ -217,14 +217,14 @@ def moveTo(measurePointCoordinate):
     oldXCounter, oldYCounter = xCounter, yCounter
     # Check if we got closer in the last 3 iterations through a circular buffer
     distanceLeftQue = deque(maxlen=2)
-    distanceLeftQue.append(xDist + yDist)
+    distanceLeftQue.append(pow(xDist, 2) + pow(yDist, 2))
     iteration = 0
     baseAmountOfIterations = 0
     # Make it run for at least 3 steps to accommodate for ramping
     while distanceLeftQue[0] >= distanceLeftQue[-1] or \
             iteration <= max(baseAmountOfIterations, distanceLeftQue.maxlen):
-        lengthToGoX = abs(xCounter - oldXCounter - xDist)
-        lengthToGoY = abs(yCounter - oldYCounter - yDist)
+        lengthToGoX = abs(xCounter - oldXCounter - abs(xDist))
+        lengthToGoY = abs(yCounter - oldYCounter - abs(yDist))
         sleep(0.004)
         # TODO Possible improvement: other distance metric
         distanceLeft = sqrt(pow(lengthToGoX, 2) + pow(lengthToGoY, 2))
@@ -232,27 +232,40 @@ def moveTo(measurePointCoordinate):
         iteration += 1
     turnOffMotors()
     global currentPos
-    # TODO Test: real value <-> expected value
-    currentPos = measurePointCoordinate
-    # # How much deviation is caused by the 3-step latency?
+    # TODO Test: measured value <-> expected value
+    # # using expected value
+    # currentPos = measurePointCoordinate
+    # using measured value
+    xCoor = currentPos.x + (xCounter - oldXCounter) * sign(xDist)
+    yCoor = currentPos.y + (yCounter - oldYCounter) * sign(yDist)
+    currentPos = Coordinate(xCoor, yCoor)
+    print("currentPos: " + str(currentPos))
+
+    # # How much deviation is caused by the 2-step latency?
     print("circ buff: " + str(distanceLeftQue))
-    # print("Current coor: " + str(currentPos))
     if distanceLeftQue[0] >= 50:
-        print(" Wew, something went wrong there. Let's find out what!")
+        print(" Wew, we're way off. Let's find out why!")
         print("  xSpeed: " + str(xSpeed) + " ySpeed: " + str(ySpeed))
+    print(" ")
 
 
 def printQueue(vectorQueue):
     resetPos()
-    # for vector in vectorQueue:
-    vector = dummyVector
-    # Move to starting position
-    moveTo(numpyToEncoder(vector.pop(0)))
-    # Start printing
-    pumpOn()
-    for coordinate in vector:
-        moveTo(numpyToEncoder(coordinate))
-    pumpOff()
+    for vector in vectorQueue:
+        # Move to starting position
+        moveTo(numpyToEncoder(vector[0]))
+        # Start printing
+        pumpOn()
+
+        moveTo(numpyToEncoder(vector[vector.__len__() - 1]))
+        # for x in range(vector.__len__()):
+        #     # Only print every fourth coordinate
+        #     if (x % 4) == 0:
+        #         moveTo(numpyToEncoder(vector[x]))
+
+        # for coordinate in vector:
+        #     moveTo(numpyToEncoder(coordinate))
+        pumpOff()
 
 
 # Precondition: Starts in bottom left corner
@@ -267,49 +280,43 @@ def drawRectangle(breadth, height):
 ##
 # Axial systems
 ##
-In this project there are three axial systems:
+In this project there are two axial systems:
   - the numpy coordinate system used by the slicer (320 x 320)
-  - the encoder measuring system (1840 x 1760)
-We below the converters (numpy, encoder) and (encoder, time)
-The first is simple, the latter accommodates for ramping and inequality between motors
+  - the encoder measuring system (maxMeasuringPointsXaxis x maxMeasuringPointsYaxis)
 '''
 
 
 def numpyToEncoder(numpyCoordinate):
-    print("Numpy Coor: " + str(numpyCoordinate))
     x = numpyCoordinate[0]
     y = numpyCoordinate[1]
-    # Slicer uses a grid system of 320 x 320
+    if x > 320.0 or y > 320.0:
+        print("One of these numpy coordinates is larger than 320. We're going out "
+              "of bounds. x y " + str(x) + " " + str(y))
     x = x / 320.0
     y = y / 320.0
     x = x * maxMeasuringPointsXaxis
     y = y * maxMeasuringPointsYaxis
+    print("Dest Coor: " + str(x) + " " + str(y))
     return Coordinate(x, y)
-
-
-# To avoid ramping of the dc motor we take the trajectory of a complete vector
-#  and steer towards the end. At the end of a vector we stop completely
-# def encoderToTime(encoderVector):
-#     encoderVector.x
 
 
 def test(vectorQueue):
     print("start test")
-    # printQueue(vectorQueue)
-
     # resetPos()
-    # moveTo(Coordinate(0, 0))
-    # pumpOn()
-    # drawRectangle(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis)
-    # moveTo(Coordinate(200, 200))
-    # drawRectangle(maxMeasuringPointsXaxis / 2, maxMeasuringPointsYaxis)
-    # pumpOff()
-
-    printQueue([])
+    # drawingRange()
+    drawingRange()
+    # printQueue(vectorQueue)
+    print("end")
 
 
-#    print(numpyToEncoder([160.0, 160.0]))
-print("end")
+# Show the user what the drawing range is by printing
+# Also functions as a way to load the tube with fluid
+def drawingRange():
+    resetPos()
+    pumpOn()
+    drawRectangle(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis)
+    pumpOff()
+    resetPos()
 
 
 # Flushes the tube for 60 seconds (for cleaning)
