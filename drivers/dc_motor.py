@@ -1,5 +1,6 @@
 #! ../pyenv/bin/python3
 
+from drivers import pump
 import atexit
 from math import sqrt, floor
 from time import sleep
@@ -15,7 +16,7 @@ GPIO.setmode(GPIO.BOARD)
 from Adafruit_MotorHAT import Adafruit_MotorHAT
 
 # Amount of measuring points over the axis
-maxMeasuringPointsXaxis = 1500.0
+maxMeasuringPointsXaxis = 1300.0
 maxMeasuringPointsYaxis = 1450.0
 # Time it takes to cover all measuring points with a full speed motor. Numbers acquired through
 # statistics. Allows us to compensates for one motor being slower than the other
@@ -46,30 +47,6 @@ def turnOffMotors():
 # Should the program on the Pi crash, the motors will be stopped
 #  See motor hat documentation page 4
 atexit.register(turnOffMotors)
-
-###
-# Setting up pump
-###
-
-# Relais to pump
-GPIO.setup([7], GPIO.OUT, initial=GPIO.HIGH)
-
-
-# The relais wants a HIGH to turn the pump and green control light off
-def pumpOff():
-    GPIO.output(7, GPIO.HIGH)
-
-
-# The relais wants a LOW to turn the pump and green control light on
-def pumpOn():
-    GPIO.output(7, GPIO.LOW)
-
-
-# Should the program on the Pi crash, the motors will be stopped
-#  See motor hat documentation page 4
-# Note: atexit functions are executed in reversed order
-atexit.register(GPIO.cleanup)
-atexit.register(pumpOff)
 
 '''
 ###
@@ -130,7 +107,7 @@ TODO outline these functions
 # Note: this is the utmost down left position for the motor plus an offset to compensate for the
 # round edges of the frying pan
 def resetPos():
-    print("Starting position reset")
+    # print("Starting position reset")
     # Ramp both motors up to max speed
     xMotor.run(Adafruit_MotorHAT.BACKWARD)
     revUpMotor(xMotor, maxSpeed)
@@ -157,16 +134,16 @@ def resetPos():
         sleepTime += 0.02
         sleep(0.02)
         oldX, oldY = xCounter, yCounter
-    # # Measurement output
-    # print("xCounter = " + str(xCounter) + " in " + str(sleepTimeX))
-    # print("yCounter = " + str(yCounter) + " in " + str(sleepTimeY))
+    # Measurement output
+    print("xCounter = " + str(xCounter) + " in " + str(sleepTimeX))
+    print("yCounter = " + str(yCounter) + " in " + str(sleepTimeY))
 
     # Offset to accommodate for round edges of frying pan
     moveTo(Coordinate(0, 100))
     turnOffMotors()
     global currentPos
     currentPos = Coordinate(0, 0)
-    print("Reset to (0,0) complete")
+    # print("Reset to (0,0) complete")
 
 
 def setDirection(motor, dist):
@@ -249,23 +226,24 @@ def moveTo(measurePointCoordinate):
     print(" ")
 
 
-def printQueue(vectorQueue):
+def printVectorQueue(vectorQueue):
     resetPos()
     for vector in vectorQueue:
         # Move to starting position
         moveTo(numpyToEncoder(vector[0]))
         # Start printing
-        pumpOn()
+        pump.on()
 
-        moveTo(numpyToEncoder(vector[vector.__len__() - 1]))
-        # for x in range(vector.__len__()):
-        #     # Only print every fourth coordinate
-        #     if (x % 4) == 0:
-        #         moveTo(numpyToEncoder(vector[x]))
+        # moveTo(numpyToEncoder(vector[vector.__len__() - 1]))
+        for x in range(vector.__len__()):
+                # Only print every fourth coordinate
+            #     if (x % 4) == 0:
+            moveTo(numpyToEncoder(vector[x]))
 
-        # for coordinate in vector:
-        #     moveTo(numpyToEncoder(coordinate))
-        pumpOff()
+            for coordinate in vector:
+                moveTo(numpyToEncoder(coordinate))
+        pump.off()
+    resetPos()
 
 
 # Precondition: Starts in bottom left corner
@@ -302,10 +280,14 @@ def numpyToEncoder(numpyCoordinate):
 
 def test(vectorQueue):
     print("start test")
-    # resetPos()
+    resetPos()
     # drawingRange()
-    drawingRange()
-    # printQueue(vectorQueue)
+    moveTo(Coordinate(maxMeasuringPointsXaxis,maxMeasuringPointsYaxis))
+    # pumpOn()
+    # drawRectangle(maxMeasuringPointsXaxis-2*200, maxMeasuringPointsYaxis-2*200)
+    # pumpOff()
+    # printVectorQueue(squareInSquareVectorQueue)
+
     print("end")
 
 
@@ -313,19 +295,28 @@ def test(vectorQueue):
 # Also functions as a way to load the tube with fluid
 def drawingRange():
     resetPos()
-    pumpOn()
+    pump.on()
     drawRectangle(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis)
-    pumpOff()
+    pump.off()
     resetPos()
 
 
-# Flushes the tube for 60 seconds (for cleaning)
-def flushTube():
-    pumpOn()
-    sleep(60)
-    pumpOff()
 
+# Hardcoded first-print test
+squareInSquareVectorQueue = [[[0., 0.],
+                              [0., 320.],
+                              [320., 320.],
+                              [320., 0],
+                              [0.,0.]
+                              ],
+                             [[80., 80.],
+                              [240., 80.],
+                              [240., 240.],
+                              [80., 240.],
+                              [80., 80.]
+                              ]]
 
+# First part of an eiffeltower vector
 dummyVector = [[168.8, 275.28],
                [168.0, 275.28],
                [167.2, 275.28],

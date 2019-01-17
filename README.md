@@ -1,4 +1,8 @@
 # Pannenkoekenprinter
+This readme explains the structure of the code and the design decisions. For a list
+ of all the necessary equipment and a user guide, see ``documentation > Pannenkoekenprinter 
+Gebruikshandleiding.pdf``.
+
 ## File/code structure
 
 ## Physical components
@@ -14,8 +18,26 @@ Since the first isn't that technical, we will now go into detail on how we did t
 Scan for motor hat (I2C connections)
 > sudo i2cdetect -y 1
 
-## Tussenstand
-Ik kan lijntjes tekenen
-Heb geen flauw idee hoe ik op Ties' code moet aanhaken
-Scipi wil niet builden via pip3
-Succes!
+\title{NDL Pannenkoekenprinter rapport}
+\author{Frank Gerlings, s4384873}
+\date{Januari 2019}
+
+\begin{document}
+
+\maketitle
+
+Motoren volle bak aanzetten en daarna meten tot we niet dichterbij komen
+# wanneer stoppen met bewegen:
+#  - Fixed boundary (linear function)
+#  -> Stop when not getting closer anymore
+#    Skipt soms volledige beweging (-200,1400)
+#  - Precalculate the estimated time
+
+
+TODO
+Nog even symlinkje maken "pancake"
+# Test all images, remove the ones that aren't sliced correctly
+# Feature: tab completion for the images
+
+\end{document}
+
