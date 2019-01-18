@@ -69,16 +69,20 @@ def main():
 # # Just some quick testing
 # printPancake(Image.open("images/heart.png"))
 # driver.resetPos()
-# driver.test([])
-# driver.print
-main()
+driver.test([])
+# main()
+
 
 # Hij wordt onnauwkeurig doordat:
 # - hij 2% afwijking heeft op de y-meetwaarden en 0,8% op de x-as
 # - hij standaard voorbij zijn dichtst bijzijnde punt afrijdt
 # - een gekke bug waardoor hij 50 naast zijn waarde zit
 # - de motoren zijn wonky (zeker die op de y-as) -> wielen veranderen
-# - hij print heel dik -> dunner slangetje?
+# - hij print heel dik -> klemmetje
 # - ik kan ze maar aan een kant bakken -> hij moet rustig bakken
 # Sinful: - Total dist bijhouden en iedere x keer resetPos?
+# - mist misschien interrupts? "measuring callback GPIO"
 
+# Hoe meet ik hoe lang hij aan het rekenen is op de body in mijn loop?
+# Naming universally consistent xSpeed <-> speedX
+# Rewrite geometry library

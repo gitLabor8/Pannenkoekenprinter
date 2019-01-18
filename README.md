@@ -33,9 +33,13 @@ Motoren volle bak aanzetten en daarna meten tot we niet dichterbij komen
 #    Skipt soms volledige beweging (-200,1400)
 #  - Precalculate the estimated time
 
+Python Geometry is traag. Doet meerdere seconden over intersection circle ray
+moet eigenlijk in 0.003 seconden
+Let's try Shapely, which is a wrapper of GEOS, based on C++ -> faster than Python
 
 TODO
 Nog even symlinkje maken "pancake"
+Create a requirements.txt (for Python)
 # Test all images, remove the ones that aren't sliced correctly
 # Feature: tab completion for the images
 
