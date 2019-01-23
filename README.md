@@ -36,10 +36,12 @@ Motoren volle bak aanzetten en daarna meten tot we niet dichterbij komen
 Python Geometry is traag. Doet meerdere seconden over intersection circle ray
 moet eigenlijk in 0.003 seconden
 Let's try Shapely, which is a wrapper of GEOS, based on C++ -> faster than Python
+evaluate=false was ook niet snel genoeg 
 
 TODO
 Nog even symlinkje maken "pancake"
 Create a requirements.txt (for Python)
+autocomplete TUI
 # Test all images, remove the ones that aren't sliced correctly
 # Feature: tab completion for the images
 

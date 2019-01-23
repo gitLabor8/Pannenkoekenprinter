@@ -1,13 +1,17 @@
 #! ../pyenv/bin/python3
 
 from drivers import pump
+from drivers.dc_motor_adafruit_wrapper import MotorWrapper
+from drivers.path import Path
 import atexit
 from math import sqrt, floor
 from time import sleep
 from collections import deque
 from coordinates import Coordinate
 from numpy import sign
-from sympy.geometry import *
+
+# from sympy.geometry import *
+# from shapely.geometry import *
 
 Coordinate.default_order = 'xy'
 
@@ -30,26 +34,17 @@ maxTimeYaxis = 5.76
 ###
 '''
 
-# Set variables
-mh = Adafruit_MotorHAT(addr=0x70)
-maxSpeed = 255
-
 # Motor that goes over the x-axis, the motor itself is stationary
-xMotor = mh.getMotor(1)
+xMotor = MotorWrapper(1)
 # Motor that goes over the y-axis, the motor itself is on the moving arm
-yMotor = mh.getMotor(2)
+yMotor = MotorWrapper(2)
+maxSpeed = 255
 
 
 def turnOffMotors():
-    xMotor.setSpeed(0)
-    xMotor.run(Adafruit_MotorHAT.RELEASE)
-    yMotor.setSpeed(0)
-    yMotor.run(Adafruit_MotorHAT.RELEASE)
+    xMotor.turnOff()
+    yMotor.turnOff()
 
-
-# Should the program on the Pi crash, the motors will be stopped
-#  See motor hat documentation page 4
-atexit.register(turnOffMotors)
 
 '''
 ###
@@ -108,11 +103,11 @@ GPIO.add_event_callback(18, measuringCallback)
 # Sets motor in position (0,0) of the drawing frame
 def resetPos():
     # print("Starting position reset")
-    # Ramp both motors up to max speed
-    xMotor.run(Adafruit_MotorHAT.BACKWARD)
-    revUpMotor(xMotor, maxSpeed)
-    yMotor.run(Adafruit_MotorHAT.BACKWARD)
-    revUpMotor(yMotor, maxSpeed)
+    # Ramp both motors up to max speed backwards
+    xMotor.setDirection(-1)
+    xMotor.setSpeed(maxSpeed)
+    yMotor.setDirection(-1)
+    yMotor.setSpeed(maxSpeed)
 
     # Run until we can't go any further
     oldX, oldY = xCounter, yCounter
@@ -139,94 +134,89 @@ def resetPos():
     # print("yCounter = " + str(yCounter) + " in " + str(sleepTimeY))
 
     # Offset to accommodate for round edges of frying pan
-    moveTo(Coordinate(0, 100))
-    turnOffMotors()
+    moveTo(Coordinate(45, 100))
     global currentPos
     currentPos = Coordinate(0, 0)
     # print("Reset to (0,0) complete")
 
 
-def setDirection(motor, dist):
-    if (dist > 0):
-        motor.run(Adafruit_MotorHAT.FORWARD)
-    else:
-        motor.run(Adafruit_MotorHAT.BACKWARD)
-
-
-# Gradually speeding up the motor
-def revUpMotor(motor, speed):
-    # Let's try out not revving, prolly faster
-    # motor.setSpeed(speed)
-    # Ramping method (better for motor condition?) -> Then it will actually start
-    for i in range(speed):
-        motor.setSpeed(i)
+import time
 
 
 # Goes to the given absolute endpoint
 def moveTo(end):
     global currentPos
-    xDist = end.x - currentPos.x
-    yDist = end.y - currentPos.y
-    setDirection(xMotor, xDist)
-    setDirection(yMotor, yDist)
-    print("xdist, ydist = " + str(xDist) + " " + str(yDist))
+    start = currentPos
+    # The path that we will ideally follow
+    path = Path(start, end)
+    xMotor.setDirection(path.xDist)
+    yMotor.setDirection(path.yDist)
 
-    # Now we set the length
-    if xDist == 0 and yDist == 0:
-        return
     # The Y-motor is about 4% faster than the X-motor, see statistics in spreadsheet
     speedDif = maxTimeXaxis / maxTimeYaxis
-
-    if xDist == 0:
-        baseXSpeed = 0
-        baseYSpeed = maxSpeed
+    # Now we calculate base speeds
+    if path.xDist == 0 and path.yDist == 0:
+        return
+    if path.xDist == 0:
+        xSpeedBase = 0
+        ySpeedBase = maxSpeed
     else:
-        distDif = abs(yDist) / abs(xDist)
-        if (abs(xDist) > abs(yDist)):
-            baseXSpeed = floor(maxSpeed)
-            baseYSpeed = floor(maxSpeed * distDif / speedDif)
+        distDif = abs(path.yDist) / abs(path.xDist)
+        if (abs(path.xDist) > abs(path.yDist)):
+            xSpeedBase = floor(maxSpeed)
+            ySpeedBase = floor(maxSpeed * distDif / speedDif)
         else:
-            baseXSpeed = floor(maxSpeed / distDif)
-            baseYSpeed = floor(maxSpeed / speedDif)
+            xSpeedBase = floor(maxSpeed / distDif)
+            ySpeedBase = floor(maxSpeed / speedDif)
 
-    # Adjust speed to be
-    oldXCounter, oldYCounter = xCounter, yCounter
+    # We are using threads to steer the motors, because otherwise one motor runs
+    # still when the other is gaining speed
+    # Should things go wacky, we need to be able to adjust our movements
+    xCounterOld, yCounterOld = xCounter, yCounter
+    # Keeps track of how close we've been to our goal. Acts as emergency stop
+    # should we overshoot
+    distLeftCircBuffer = deque(maxlen=3)
     finished = False
-    # expectedRoute is a semi line from the destination to the end
-    expectedRoute = Ray(Point(end.x, end.y, evaluate=False), Point(currentPos.x,
-                                                          currentPos.y, evaluate =
-                                                                   False))
     while not finished:
         try:
-            sleep(0.004)
+            # Can be 0.004
+            # sleep(0.004)
             # Update current position
-            xCoor = currentPos.x + (xCounter - oldXCounter) * sign(xDist)
-            yCoor = currentPos.y + (yCounter - oldYCounter) * sign(yDist)
+            xCoor = start.x + (xCounter - xCounterOld) * sign(path.xDist)
+            yCoor = start.y + (yCounter - yCounterOld) * sign(path.yDist)
             currentPos = Coordinate(xCoor, yCoor)
-            print("curentPos decided: " + str(currentPos))
             # Calculate how far we still need to go
-            distanceLeftX = abs(xCounter - oldXCounter - abs(xDist))
-            distanceLeftY = abs(yCounter - oldYCounter - abs(yDist))
-            distanceLeft = sqrt(pow(distanceLeftX, 2) + pow(distanceLeftY, 2))
-            print("distances calced")
+            xDistanceLeft = abs(xCounter - xCounterOld - abs(path.xDist))
+            yDistanceLeft = abs(yCounter - yCounterOld - abs(path.yDist))
+            distanceLeft = sqrt(pow(xDistanceLeft, 2) + pow(yDistanceLeft, 2))
+            distLeftCircBuffer.append(distanceLeft)
             # Calculate where we are supposed to be now
-            distanceCirle = Circle(Point(end.x, end.y), distanceLeft, evaluate=False)
-            expectedPos = intersection(expectedRoute, distanceCirle, evaluate=False)[0]
-            print("heavy math done")
+            expectedPos = path.expectedPos(distanceLeft)
             # Adjust speed accordingly
             xMod = speedModifier(currentPos.x, expectedPos.x)
             yMod = speedModifier(currentPos.y, expectedPos.y)
-            xSpeed = floor(xMod * min(baseXSpeed, speedNearEnd(distanceLeftX)))
-            ySpeed = floor(yMod * min(baseYSpeed, speedNearEnd(distanceLeftY)))
-            revUpMotor(xMotor, xSpeed)
-            revUpMotor(yMotor, ySpeed)
-            finished = distanceLeft < 3
-            print("executed one loop!")
+            xSpeed = floor(xMod * min(xSpeedBase, speedNearEnd(xDistanceLeft)))
+            ySpeed = floor(yMod * min(ySpeedBase, speedNearEnd(yDistanceLeft)))
+            startTime = time.time()
+            xMotor.speedUp(xSpeed)
+            yMotor.speedUp(ySpeed)
+            endTime = time.time()
+            print("speeds: " + str(xMotor.speed) + " " + str(yMotor.speed))
+            # print("Time motors: " + str(endTime - startTime))
+            print("distanceLeft:" + str(distanceLeft))
+            finished = distanceLeft < 5
+            if distLeftCircBuffer[0] + 1 < distLeftCircBuffer[-1] \
+                    and distLeftCircBuffer.__len__() == distLeftCircBuffer.maxlen:
+                print("Emergency exit, we went too far: " + str(distLeftCircBuffer))
+                finished = True
         except KeyboardInterrupt:
             print("currentPos:  " + str(currentPos.x) + " " + str(currentPos.y))
             print("expectedPos: " + str(expectedPos.x) + " " + str(expectedPos.y))
+            print("baseSpeeds:  " + str(xSpeedBase) + " " + str(ySpeedBase))
+            print("distsLeft:   " + str(xDistanceLeft) + " " + str(yDistanceLeft))
             print("mods:        " + str(xMod) + " " + str(yMod))
             print("speeds:      " + str(xSpeed) + " " + str(ySpeed))
+            break
     turnOffMotors()
 
     print("currentPos: " + str(currentPos))
@@ -245,12 +235,14 @@ def speedNearEnd(distance):
         return maxSpeed
     elif distance < 10:
         return 20
-    # TODO Recalc
-    return -235 / 40 * distance + 20
+    slowDown = 47 / 8 * distance - 310 / 8
+    # print("Slowdown: " + str(slowDown))
+    return slowDown
 
 
 # Calculates the boost a motor needs to keep the printer head on the expected path
 # Expects two _numbers_ not two coordinates
+# TODO Scale these
 def speedModifier(currentPos, expectedPos):
     margin = 1
     if currentPos < expectedPos - margin:
@@ -278,9 +270,6 @@ def printVectorQueue(vectorQueue):
                 moveTo(numpyToEncoder(coordinate))
         pump.off()
     resetPos()
-
-
-#  printer head should be
 
 
 # Converts numpy coordinates (320x320) to the grid used by

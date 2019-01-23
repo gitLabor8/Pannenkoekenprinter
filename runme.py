@@ -75,6 +75,7 @@ driver.test([])
 
 # Hij wordt onnauwkeurig doordat:
 # - hij 2% afwijking heeft op de y-meetwaarden en 0,8% op de x-as
+#  -> Reset na x aantal meetpunten
 # - hij standaard voorbij zijn dichtst bijzijnde punt afrijdt
 # - een gekke bug waardoor hij 50 naast zijn waarde zit
 # - de motoren zijn wonky (zeker die op de y-as) -> wielen veranderen
