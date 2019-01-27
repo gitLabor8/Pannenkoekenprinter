@@ -16,8 +16,10 @@ class MotorWrapper:
         # Options for number:
         # 1: Motor that goes over the x-axis, the motor itself is stationary
         # 2: Motor that goes over the y-axis, the motor itself is on the moving arm
-
-        self.motor = mh.getMotor(number)
+        if number == 1 or number == 2:
+            self.motor = mh.getMotor(number)
+        else:
+            print("MotorWrapper init: number is wrong: " + str(number))
         self.speed = 0
 
         # Should the program on the Pi crash, the motors will be stopped
@@ -46,33 +48,36 @@ class MotorWrapper:
             self.motor.setSpeed(i)
 
     # Does care about running time
+    # Ramping cannot take long, so prematurely stop it should it be to big
     # Returns the speed at which it is actually running
     def speedUp(self, speedNew):
         speedNew = self.speedCheck(speedNew)
-        # accelerating
-        # TODO Git commit once it works-ish
-        acceleration = speedNew - self.speed
-        # Ramping cannot take long, so prematurely stop it should it be to big
+        speedDif = speedNew - self.speed
+        # Maximum accelleration in one cycle. Lower to poll more often
         maxAccInOneCycle = 12
-        if acceleration > 0:
-            if acceleration > maxAccInOneCycle:
+        if speedDif > 0:
+            if speedDif > maxAccInOneCycle:
                 upperbound = self.speed + maxAccInOneCycle
             else:
-                upperbound = self.speed + acceleration
+                upperbound = self.speed + speedDif
             for i in range(self.speed, upperbound):
-                # print("amping to " + str(i))
                 self.motor.setSpeed(i)
             self.speed = upperbound
+            if speedNew > maxSpeed:
+                print("wrong! " + str(upperbound) + " " + str(speedNew))
             return upperbound
         else:
-            if acceleration < -maxAccInOneCycle:
-                lowerbound = self.speed - maxAccInOneCycle
+            if abs(speedDif) < maxAccInOneCycle:
+                lowerbound = self.speed + speedDif
             else:
-                lowerbound = self.speed = acceleration
+                lowerbound = self.speed - maxAccInOneCycle
             for i in range(self.speed, lowerbound, -1):
                 self.motor.setSpeed(i)
             self.speed = lowerbound
+            if lowerbound > maxSpeed:
+                print("wrong! " + str(lowerbound) + " " + str(speedNew))
             return lowerbound
+
 
     # Error messaging & correction
     def speedCheck(self, speed):

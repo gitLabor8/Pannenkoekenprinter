@@ -3,12 +3,16 @@
 from drivers import pump
 from drivers.dc_motor_adafruit_wrapper import MotorWrapper
 from drivers.path import Path
+from drivers.motorThread import MotorThread
 import atexit
 from math import sqrt, floor
 from time import sleep
 from collections import deque
 from coordinates import Coordinate
 from numpy import sign
+from threading import Thread, Event
+import queue
+import time
 
 # from sympy.geometry import *
 # from shapely.geometry import *
@@ -38,7 +42,10 @@ maxTimeYaxis = 5.76
 xMotor = MotorWrapper(1)
 # Motor that goes over the y-axis, the motor itself is on the moving arm
 yMotor = MotorWrapper(2)
+# Highest number that the motor accepts
 maxSpeed = 255
+# Lowest speed that makes the arms move
+minSpeed = 65
 
 
 def turnOffMotors():
@@ -134,13 +141,14 @@ def resetPos():
     # print("yCounter = " + str(yCounter) + " in " + str(sleepTimeY))
 
     # Offset to accommodate for round edges of frying pan
-    moveTo(Coordinate(45, 100))
+    moveTo(Coordinate(700, 700))
+    input("press enter")
+    moveTo(Coordinate(1400, 350))
+    input("press enter")
+    moveTo(Coordinate(350, 1400))
     global currentPos
     currentPos = Coordinate(0, 0)
     # print("Reset to (0,0) complete")
-
-
-import time
 
 
 # Goes to the given absolute endpoint
@@ -152,6 +160,7 @@ def moveTo(end):
     xMotor.setDirection(path.xDist)
     yMotor.setDirection(path.yDist)
 
+    # TODO minSpeed incorporate
     # The Y-motor is about 4% faster than the X-motor, see statistics in spreadsheet
     speedDif = maxTimeXaxis / maxTimeYaxis
     # Now we calculate base speeds
@@ -169,10 +178,18 @@ def moveTo(end):
             xSpeedBase = floor(maxSpeed / distDif)
             ySpeedBase = floor(maxSpeed / speedDif)
 
-    # We are using threads to steer the motors, because otherwise one motor runs
-    # still when the other is gaining speed
     # Should things go wacky, we need to be able to adjust our movements
     xCounterOld, yCounterOld = xCounter, yCounter
+    # We are using threads to steer the motors, because otherwise one motor runs
+    # still when the other is gaining speed
+    xSpeedQ, ySpeedQ = queue.LifoQueue(), queue.LifoQueue()
+    xThread = MotorThread(xMotor, xSpeedQ)
+    yThread = MotorThread(yMotor, ySpeedQ)
+    xThread.setName("xxMotorThread")
+    yThread.setName("yMotorThread")
+    xThread.start()
+    yThread.start()
+
     # Keeps track of how close we've been to our goal. Acts as emergency stop
     # should we overshoot
     distLeftCircBuffer = deque(maxlen=3)
@@ -180,7 +197,7 @@ def moveTo(end):
     while not finished:
         try:
             # Can be 0.004
-            # sleep(0.004)
+            sleep(0.04)
             # Update current position
             xCoor = start.x + (xCounter - xCounterOld) * sign(path.xDist)
             yCoor = start.y + (yCounter - yCounterOld) * sign(path.yDist)
@@ -197,20 +214,21 @@ def moveTo(end):
             yMod = speedModifier(currentPos.y, expectedPos.y)
             xSpeed = floor(xMod * min(xSpeedBase, speedNearEnd(xDistanceLeft)))
             ySpeed = floor(yMod * min(ySpeedBase, speedNearEnd(yDistanceLeft)))
-            startTime = time.time()
-            xMotor.speedUp(xSpeed)
-            yMotor.speedUp(ySpeed)
-            endTime = time.time()
-            print("speeds: " + str(xMotor.speed) + " " + str(yMotor.speed))
-            # print("Time motors: " + str(endTime - startTime))
-            print("distanceLeft:" + str(distanceLeft))
+            print("speeds: " + str(xSpeed) + " " + str(ySpeed))
+            xSpeedQ.put(xSpeed)
+            ySpeedQ.put(ySpeed)
+            print("mods! Mods!:" + str(xMod) + str(yMod))
+            # print("distanceLeft:" + str(distanceLeft))
+            # print("Q lengths:   " + str())
+            # print(" ")
             finished = distanceLeft < 5
+            # Emergency exit should we go past our point
             if distLeftCircBuffer[0] + 1 < distLeftCircBuffer[-1] \
                     and distLeftCircBuffer.__len__() == distLeftCircBuffer.maxlen:
                 print("Emergency exit, we went too far: " + str(distLeftCircBuffer))
                 finished = True
         except KeyboardInterrupt:
-            print("currentPos:  " + str(currentPos.x) + " " + str(currentPos.y))
+            print("urrentPos:  " + str(currentPos.x) + " " + str(currentPos.y))
             print("expectedPos: " + str(expectedPos.x) + " " + str(expectedPos.y))
             print("baseSpeeds:  " + str(xSpeedBase) + " " + str(ySpeedBase))
             print("distsLeft:   " + str(xDistanceLeft) + " " + str(yDistanceLeft))
@@ -220,35 +238,31 @@ def moveTo(end):
     turnOffMotors()
 
     print("currentPos: " + str(currentPos))
-
-    # # How much deviation is caused by the 2-step latency?
-    # print("circ buff: " + str(distanceLeftQue))
-    # if distanceLeftQue[0] >= 50:
-    #     print(" Wew, we're way off. Let's find out why!")
-    #     print("  xSpeed: " + str(xSpeed) + " ySpeed: " + str(ySpeed))
     print(" ")
 
 
 # When the motor is almost there, it should gradually slow down
-def speedNearEnd(distance):
-    if distance > 50:
+def speedNearEnd(distance: float):
+    if distance > 200:
         return maxSpeed
     elif distance < 10:
-        return 20
-    slowDown = 47 / 8 * distance - 310 / 8
+        return minSpeed
+    slowDown = 1 * distance + 55
     # print("Slowdown: " + str(slowDown))
     return slowDown
 
 
 # Calculates the boost a motor needs to keep the printer head on the expected path
 # Expects two _numbers_ not two coordinates
-# TODO Scale these
-def speedModifier(currentPos, expectedPos):
+def speedModifier(currentPos: float, expectedPos: float):
     margin = 1
-    if currentPos < expectedPos - margin:
-        return 1.0
-    elif currentPos > expectedPos + margin:
-        return 0.8
+    diff = currentPos - expectedPos
+    # We go too fast -> slow down
+    if diff > margin:
+        return max(0.8, -0.003 * diff + 0.9)
+    # We go too slow -> speed up
+    elif diff < -margin:
+        return min(1.0, -0.003 * diff + 0.9)
     return 0.9
 
 
@@ -293,7 +307,7 @@ def test(vectorQueue):
     resetPos()
     # print(str(expectedCoorGenerator(Coordinate(0, 0), Coordinate(3, 4), 0.1)))
     # drawingRange()
-    moveTo(Coordinate(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis))
+    # moveTo(Coordinate(maxMeasuringPointsXaxis, maxMeasuringPointsYaxis))
     # pumpOn()
     # drawRectangle(maxMeasuringPointsXaxis-2*200, maxMeasuringPointsYaxis-2*200)
     # pumpOff()

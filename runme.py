@@ -4,11 +4,6 @@ from drivers import dc_motor as driver
 from drivers import pump
 from os import walk
 
-###
-# Vraagjes aan Pieter
-###
-# Split into multiple files? 300+ lines of code/comment. Pump <-> motor
-
 
 def programSelector():
     print("Please enter the name of the file that you would like to print or "
@@ -53,6 +48,7 @@ def printPancake(image):
     print("Starting printing")
     driver.printVectorQueue(vectorQueue)
 
+
 def main():
     try:
         print("Hello! Welcome to the Pannenkoekenprinter.\n")
@@ -65,6 +61,7 @@ def main():
               "Let me get out of the way, gimme a sec")
         driver.resetPos()
         print("Call me up again by typing \"python3 runme.py\"")
+
 
 # # Just some quick testing
 # printPancake(Image.open("images/heart.png"))

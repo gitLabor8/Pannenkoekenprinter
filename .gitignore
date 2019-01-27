@@ -114,3 +114,6 @@ local/
 *.save
 *.1
 *.2
+
+# Local test sheet
+lab.py
