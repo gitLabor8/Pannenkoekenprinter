@@ -16,12 +16,14 @@ class Path:
         self.xDist = end.x - begin.x
         self.yDist = end.y - begin.y
         self.totalDist = sqrt(pow(self.xDist, 2) + pow(self.yDist, 2))
+        self.xOrientation = self.xDist >= 0
+        self.yOrientation = self.yDist >= 0
 
     # Precondition: we haven't surpassed the end point yet
     def expectedPos(self, distanceLeft: float):
         percentage = 1 - distanceLeft / self.totalDist
-        xCoor = percentage * self.xDist
-        yCoor = percentage * self.yDist
+        xCoor = self.begin.x + percentage * self.xDist
+        yCoor = self.begin.y + percentage * self.yDist
         return Coordinate(xCoor, yCoor)
 
     def __str__(self):

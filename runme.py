@@ -64,9 +64,9 @@ def main():
 
 
 # # Just some quick testing
-# printPancake(Image.open("images/heart.png"))
+printPancake(Image.open("images/ghostbloc.jpg"))
 # driver.resetPos()
-driver.test([])
+# driver.test([])
 # main()
 
 

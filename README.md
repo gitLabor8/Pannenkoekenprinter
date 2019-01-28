@@ -51,6 +51,8 @@ autocomplete TUI
 # Test all images, remove the ones that aren't sliced correctly
 # Feature: tab completion for the images
 
+minspeed needed
+
 # Libraries
 Numpy
 adafruit-circuitpython-motorkit

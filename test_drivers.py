@@ -1,5 +1,6 @@
 from drivers.dc_motor import *
 
+
 ###
 # dc_motor.py
 ###
@@ -10,10 +11,16 @@ from drivers.dc_motor import *
 def testSpeedModifier():
     # i is our relative position e.g. -30 is below the point, so it should have a
     # modifier somewhere in ]0.9, 1.0]
+    # When going in the positive direction
     for i in range(-36, 36, 1):
-        mod = speedModifier(i, 0)
+        mod = speedModifier(i, 0, True)
+        print("At relative position: " + str(i) + ", mod: " + str(mod))
+    # When going in the negative direction
+    for i in range(-36, 36, 1):
+        mod = speedModifier(i, 0, False)
         print("At relative position: " + str(i) + ", mod: " + str(mod))
 
+testSpeedModifier()
 
 # SpeedNearEnd should slow down in from maxSpeed to minSpeed in the last 200 steps
 # It should print a descending list
@@ -49,7 +56,6 @@ def testMultipleExpectedPos():
     testExpectedPos(diagonalAscending)
     diagonalDescending = Path(Coordinate(100, 100), Coordinate(0, 0))
     testExpectedPos(diagonalDescending)
-
 
 
 ###
