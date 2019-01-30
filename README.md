@@ -22,6 +22,8 @@ files containing auxiliary classes.
 particular ``Pannenkoekenprinter Gebruikshandleiding.pdf``.
 * ``./images/``: contains all example images that the printer currently can print. 
 More can be added, should the user feel the need to.
+* ``./test_drivers.py``: contains multiple tests that bruteforcely test several 
+mathematical functions
 
 ## Physical components
 An overview can be found in [this spreadsheet](https://docs.google.com/spreadsheets/d/1BaNzUmYlQQ56a9a7txzUSEZhK_B5LRCAvkFlHnZ8L6Q/edit?usp=sharing). The first tab shows all parts currently used in the printer and possible new parts. The second tab shows the lay-out of the GPIO pins that have been used, how the encoders and the relais should be connected. The third tab shows the three ports of the relais.
@@ -43,13 +45,12 @@ Python Geometry is traag. Doet meerdere seconden over intersection circle ray
 moet eigenlijk in 0.003 seconden
 Let's try Shapely, which is a wrapper of GEOS, based on C++ -> faster than Python
 evaluate=false was ook niet snel genoeg 
+Uiteindelijk simpel geschaald, uitgaan van 
 
+pancake symlink werkt
 TODO
 Nog even symlinkje maken "pancake"
-Create a requirements.txt (for Python)
-autocomplete TUI
 # Test all images, remove the ones that aren't sliced correctly
-# Feature: tab completion for the images
 
 minspeed needed
 
@@ -57,4 +58,4 @@ minspeed needed
 Numpy
 adafruit-circuitpython-motorkit
 coordinates
-
+check requirements

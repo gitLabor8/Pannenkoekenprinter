@@ -13,10 +13,10 @@ def programSelector():
           "of the printer. Useful when you want to know if you've placed the pan "
           "correctly\n"
           " + \"flush tube\" to flush the tube. Useful when you're done printing "
-          "and want to Clean the tube with hot water\n"
+          "and want to Clean the tube with hot water. Default: 10 minutes\n"
           " + \"heart.png\" to print \\images\\heart.png\n"
           " + \"list\" to show all other possible images\n"
-          " + finally, to exit press \"ctrl + c\"")
+          " + finally, to exit prematurely press \"ctrl + c\"")
     imageName = input("Please type the image name/command here: ")
     print("")
     if imageName == "pan calibrate":
@@ -60,14 +60,15 @@ def main():
         print("\n\nWant to quit printing already?\n"
               "Let me get out of the way, gimme a sec")
         driver.resetPos()
-        print("Call me up again by typing \"python3 runme.py\"")
+        print("Call me up again by typing \"python3 "
+              "/home/pi/Desktop/Pannenkoekenprinter/runme.py\" or \"pancake\"")
 
 
 # # Just some quick testing
-printPancake(Image.open("images/ghostbloc.jpg"))
+# printPancake(Image.open("images/ghostbloc.jpg"))
 # driver.resetPos()
 # driver.test([])
-# main()
+main()
 
 
 # Hij wordt onnauwkeurig doordat:
