@@ -19,7 +19,7 @@ class Path:
         self.xOrientation = self.xDist >= 0
         self.yOrientation = self.yDist >= 0
 
-    # Precondition: we haven't surpassed the end point yet
+    # Precondition: we haven't passed the end point yet
     def expectedPos(self, distanceLeft: float):
         percentage = 1 - distanceLeft / self.totalDist
         xCoor = self.begin.x + percentage * self.xDist

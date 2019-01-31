@@ -1,6 +1,9 @@
 ###
 # Wraps around the Adafruit motor and supplies some more functions
-# Prevents duplicate code for the x and y motor seperatly
+# Prevents duplicate code for the x and y motor separately
+#
+# If we want the motors to respond, we need to slowly ramp them up. This leads to
+# function calls taking a lot of time. speedUp tries to deal with this.
 ###
 
 from numpy import floor
@@ -22,7 +25,7 @@ class MotorWrapper:
             print("MotorWrapper init: number is wrong: " + str(number))
         self.speed = 0
 
-        # Should the program on the Pi crash, the motors will be stopped
+        # Should the program on the Pi crash, the motors must be stopped explicitly
         #  See motor hat documentation page 4
         atexit.register(self.turnOff)
 
@@ -30,7 +33,7 @@ class MotorWrapper:
         self.setSpeed(0)
         self.motor.run(Adafruit_MotorHAT.RELEASE)
 
-    def setDirection(self, dist):
+    def setDirection(self, dist: float):
         if (dist > 0):
             self.motor.run(Adafruit_MotorHAT.FORWARD)
         else:
@@ -40,17 +43,16 @@ class MotorWrapper:
     def run(self, direction):
         self.motor.run(direction)
 
-    # Does not care about running time, slowly ramp up to speed
+    # Does not care about running time, slowly ramps up to speed
     # On purpose named after the original MotorHAT function
     def setSpeed(self, speed: float):
         speed = self.speedCheck(speed)
         for i in range(speed):
             self.motor.setSpeed(i)
 
-    # Does care about running time
-    # Ramping cannot take long, so prematurely stop it should it be to big
-    # Returns the speed at which it is actually running
-    def speedUp(self, speedNew):
+    # Ramping may not take long, so prematurely stop it should it be to big
+    # Returns the speed at which it stopped it's ramp
+    def speedUp(self, speedNew: float):
         speedNew = self.speedCheck(speedNew)
         speedDif = speedNew - self.speed
         # Maximum accelleration in one cycle. Lower to poll more often
@@ -78,9 +80,8 @@ class MotorWrapper:
                 print("wrong! " + str(lowerbound) + " " + str(speedNew))
             return lowerbound
 
-
     # Error messaging & correction
-    def speedCheck(self, speed):
+    def speedCheck(self, speed: float):
         speed = int(floor(speed))
         if speed > 255:
             print("Speed is higher than 255/max: " + str(speed))

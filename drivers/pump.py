@@ -1,5 +1,5 @@
 ###
-# Sets up the pump
+# Sets up the pump and provides handlers to hide hardware details
 ###
 
 import atexit
@@ -15,12 +15,14 @@ GPIO.setup([7], GPIO.OUT, initial=GPIO.HIGH)
 # The relais wants a HIGH to turn the pump and green control light off
 def off():
     GPIO.output(7, GPIO.HIGH)
+    # print("pump off")
     # print("Pump is currently disabled")
 
 
 # The relais wants a LOW to turn the pump and green control light on
 def on():
     GPIO.output(7, GPIO.LOW)
+    # print("pump on!")
     # print("Pump is currently disabled")
 
 # Should the program on the Pi crash, the motors will be stopped
