@@ -1,0 +1,6 @@
+# A heart shape with another heartshape in it
+11, 11
+# Outer heart
+6, 1 - 1, 6 - 1, 9 - 2, 10 - 4, 10 - 6, 8 - 8, 10 - 10, 10 - 11, 9 - 11, 6 - 6, 1
+# Inner heart
+6, 2 - 2, 6 - 2, 9 - 4, 9 - 6, 7 - 8, 9 - 10, 9 - 10, 6 - 6, 2

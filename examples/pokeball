@@ -1,0 +1,9 @@
+## A Pokéball from the Pokémon franchiseTM
+# Resolution: x by y
+10, 10
+# Outer ball
+4,1 - 1,4 - 1,7 - 4, 10 - 7,10 - 10,7 - 10,4 - 7,1 - 4,1
+# Inner ball top
+10,5 - 7,5 - 6,7 - 5,7 - 4,5 - 1,5
+# Inner ball bot
+7,5 - 6,4 - 5,4 - 4,5
