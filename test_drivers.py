@@ -1,9 +1,15 @@
+###
+# Gives outprints of error-prone (mathematical) functions
+###
+
 from drivers.dc_motor import *
 
-
+''''
 ###
 # dc_motor.py
 ###
+'''
+
 
 # Speedmodifier should scale up from 0.8 to 1.0 where 0.9 is used as default
 # speed, higher is used to compensate for being to slow and lower to compensate
@@ -20,7 +26,6 @@ def testSpeedModifier():
         mod = speedModifier(i, 0, False)
         print("At relative position: " + str(i) + ", mod: " + str(mod))
 
-testSpeedModifier()
 
 # SpeedNearEnd should slow down in from maxSpeed to minSpeed in the last 200 steps
 # It should print a descending list
@@ -30,9 +35,12 @@ def testSpeedNearEnd():
         print("At distance: " + str(i) + ", speed: " + str(speed))
 
 
+''''
 ###
 # path.py
 ###
+'''
+
 
 def testExpectedPos(path: Path):
     print(str(path))
@@ -58,11 +66,16 @@ def testMultipleExpectedPos():
     testExpectedPos(diagonalDescending)
 
 
+''''
 ###
 # dc_motor_adafruit_wrapper.py
 ###
+'''
+
 
 # Test if the mathematical side of speedUp is up to speed ;-)
+# Should not allow the motor to directly speed up a lot, since that would make the
+#  program temporarily insensitive to changes
 def testSpeedUp():
     # Stationary motor, responsible for x-axis
     motor = MotorWrapper(1)

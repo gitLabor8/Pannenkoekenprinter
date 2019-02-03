@@ -12,6 +12,7 @@ Update: Frank Gerlings **2019-01-30**
   - 2 LAN-kabels
   - Stekkerdoos/-dozen voor minimaal 6 stekkers
   - Stroomkabels voor de printer
+  - 3 beslagkommen
   - Zeer fijne zeef
   - Garde
   - Spateltje
@@ -24,9 +25,8 @@ Update: Frank Gerlings **2019-01-30**
   - Poedersuiker/stroop
   - Keukenpapier 
   - Olie/boter
-### Sowieso zelf meenemen
+### Sowieso zelf regelen
   - Laptop met SSH
-  - 3 beslagkommen
   - Prullenbak
   - Schoonmaakspullen
 
@@ -73,6 +73,7 @@ Update: Frank Gerlings **2019-01-30**
     met een garde totdat bijna alle klontjes verdwenen zijn. Doe dit niet in de
     beslagkom waaruit je gaat printen, maar in de andere. 
   - Giet het beslag nu door de zeef in de beslagkom waar je uit gaat printen. 
+  - Vet de bakplaat in door met een stuk papier vet uit te wrijven.
 
 ## Printen
   - Ga naar de map `/home/pi/Desktop/Pannenkoekenprinter/`. `runme.py` runt de 
@@ -86,8 +87,5 @@ Update: Frank Gerlings **2019-01-30**
     pan goed hebt staan.
     - De slang door te spoelen. Dit staat standaard op 10 minuten, maar valt te 
     onderbreken met `ctrl + c`.
-    - Een lijst te geven met alle printbare afbeeldingen. Deze zijn allemaal 
-    uitgetest en worden goed geparseerd door het algoritme
-    - Een afbeelding te printen, gegeven zijn naam. Het is soms handig plaatjes 
-    eerder af te breken omdat het printen anders te lang duurt. Het algoritme 
-    neigt nog wel eens te veel aandacht aan details te besteden.
+    - Een lijst te geven met alle printbare afbeeldingen.
+    - Een afbeelding te printen, gegeven zijn naam.
