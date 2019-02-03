@@ -3,10 +3,11 @@
 ###
 
 from drivers import dc_motor as driver
-from examples import Examples
+from fileReader import FileReader
 from drivers import pump
+from os import walk
 
-ex = Examples(driver.maxMeasuringPointsXaxis, driver.maxMeasuringPointsYaxis)
+fr = FileReader(driver.maxMeasuringPointsXaxis, driver.maxMeasuringPointsYaxis)
 
 
 def programSelector():
@@ -20,25 +21,26 @@ def programSelector():
           "and want to Clean the tube with hot water. Default: 10 minutes\n"
           " + \"list\" to show all possible prints\n"
           " + finally, to exit prematurely press \"ctrl + c\"")
-    imageName = input("Please type the image name/command here: ")
+    command = input("Please type the image name/command here: ")
     print("")
-    if imageName == "pan calibrate":
+    if command == "pan calibrate":
         driver.drawingRange()
-    elif imageName == "flush tube":
+    elif command == "flush tube":
         pump.flushTube()
-    elif imageName == "list":
-        print("- \"heart\": A nice heart shape\n"
-              "- \"creeper\": A creepy face from the depths of Minecraft\n"
-              "- \"pokeball\": Pokéball for catching Snorelax!\n"
-              " Type the name to print it"
-              )
+    elif command == "list":
+        # Crawl the examples folder
+        for root, dirs, files in walk("./examples/"):
+            for filename in files:
+                print(filename)
+        print("Type the filename to print it")
     else:
-        if imageName == "heart":
-            driver.printVectorArray(ex.heart())
-        elif imageName == "creeper":
-            driver.printVectorArray(ex.creeper())
-        elif imageName == "pokeball":
-            driver.printVectorArray(ex.pokeball())
+        try:
+            with open(command, 'r') as file:
+                vectorArray = fr.parse(file)
+                driver.printVectorArray(vectorArray)
+        except OSError:
+            print("> I didn't quite get that, please format your choice correctly\n")
+            programSelector()
         else:
             print("> I didn't quite get that, please format your choice "
                   "correctly\n")
