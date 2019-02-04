@@ -89,3 +89,11 @@ Update: Frank Gerlings **2019-01-30**
     onderbreken met `ctrl + c`.
     - Een lijst te geven met alle printbare afbeeldingen.
     - Een afbeelding te printen, gegeven zijn naam.
+
+## Vectorfiles
+In de map ``./examples`` staan al enkele vectorfiles. Hier kun je er zelf aan toe 
+voegen. De eerste regel geeft de x- en y-resoluties aan, gescheiden door een komma. 
+Gezien de dikte van de printstrepen raad ik aan om rond de 10 pixels te kiezen. 
+Iedere volgende regel definieert een vector, een doorgetrokken streep. Deze geef 
+je in in het formaat ``x1, y1 - x2, y2 - x3, y3``. Regels die beginnen met een '#'
+ kunnen worden gebruikt als commentaar.
