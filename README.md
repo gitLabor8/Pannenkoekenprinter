@@ -40,10 +40,8 @@ The last tab compares the x- and y-motor with each other in terms of measuring
 points and speed.
 
 ## Notable libraries
-adafruit-circuitpython-motorkit
-coordinates
-check requirements
-No default library for encoders
+- adafruit-circuitpython-motorkit: Used to control the speed of the motors through the pi motor HAT
+- RPi.GPIO: Used to read the measurements of the encoders and used to toggle the relais of the pump
 
 ## Early approach
 In my first approach we calculated the relative speeds of the motors and just 
@@ -55,27 +53,22 @@ therefore went for another approach. We kept the mechanism that aborts once we d
 not get closer anymore as a fail safe in the final design.
 
 ## Final approach
-Here we will list several things to accommodate for and how we fixed them.
+General idea:
+ - Coordinate systems: The encoders give us about 1800 measuring points in both directions. However, the pan is not that large, so we set our actual drawing frame smaller
+ - Reset posistion: To reset the position of the printerhead, we simply move backwards untill we don't get any new measuring points. Since that means that we are not moving any further, we've apparently reached the bottom left corner of the printer. As mentioned before, our drawing frame is smaller, so we take a small offset upwards and to the right to reach the zero point of the drawing frame.
+ - Move to a specific coordinate: we will elaborate on this in the following points where we encounter a problem and then solve it.
 
 ### Diagonal lines
-The first thing we do when we want to print a line is compute the base speeds.
+The first thing we do when we want to print a line is compute the base speeds. For example, if we need to go from (0, 0) to (100, 200) then we will give the y-motor run the maximum as base speed and we scale x down to only the half of the maximum.
 
 ### Accidentally getting of track
 For all kinds of magical reasons, we could get off track. This is why we let both 
-motors run on 90% of their actual speed. Should one get behind, we can speed it up
+motors run on 90% of their normal speed. Should one get behind, we can speed it up
 to 100% of the speed. Should a motor get ahead of its position, we can slow it 
-down to 80% of it's base speed.
+down to 80% of it's normal speed.
 
 ### Where do we need to be?
-Python Geometry is traag. Doet meerdere seconden over intersection circle ray
-moet eigenlijk in 0.003 seconden
-Let's try Shapely, which is a wrapper of GEOS, based on C++ -> faster than Python
-evaluate=false was ook niet snel genoeg 
-Uiteindelijk simpel geschaald, uitgaan van 
-
-### Minimal speed
-minspeed needed
-Combine this with prev
+To find out where we wanted to keep track of our expected path. To do this, we tried to use the Python Geometry library. However, it seemed to be way to slow in computing, since it wanted keep exact track of our position, rather than focussing on execution speed. Similarly we tried to use Shapely, which is a wrapper of the C++ codebase GEOS. Since it is in C++, we expected it to be faster, but to avail. Finally we went for a selfmade class, named ``./drivers/path.py``. We would initialise it with our starting and ending positions and upon giving it our current distance of the target it would simply return the it's expected position.
 
 ### Ramping
 The motors cannot be set to a high speed and be expected to immediately run at 
@@ -97,6 +90,9 @@ we tended to overshoot our destination because of this. Therefore we implemented
 function that gradually slows down the base speed when nearing the destination. 
 This has the caveat that lines get thicker at the end. To accommodate for this we 
 disable the pump at a certain fixed distance from the end.
+
+### Minimal speed
+The motors have a base amount of resistance they encounter, namely the weight they need to move. Therefore they need a certain base speed to actually move. When we combine this with earlier mentioned solutions, we can see that the motor sometimes might fall still too early, should we naively scale the motor down to a speed of zero. Instead we introduced a minimal speed at which a motor should operate and once we are close enough to the target we completely shut down the motor.
 
 ### Default measuring deviation
 As shown in tab 4 of the spreadsheets, the x-measuring values have about 
