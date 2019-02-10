@@ -35,7 +35,7 @@ def programSelector():
         print("Type the filename to print it")
     else:
         try:
-            with open(command, 'r') as file:
+            with open("/examples/" + command, 'r') as file:
                 vectorArray = fr.parse(file)
                 driver.printVectorArray(vectorArray)
         except OSError:
